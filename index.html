@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice Agent Bug Report</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: #f4f6fb;
+        color: #1f2937;
+      }
+
+      .container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+      }
+
+      .card {
+        width: min(760px, 100%);
+        background: #ffffff;
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(31, 41, 55, 0.12);
+        padding: 1.5rem;
+      }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.5rem;
+      }
+
+      p {
+        margin: 0 0 1.25rem;
+        color: #4b5563;
+      }
+
+      form {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      @media (min-width: 700px) {
+        .grid-2 {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      .field {
+        display: grid;
+        gap: 0.35rem;
+      }
+
+      label {
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+
+      .required {
+        color: #b91c1c;
+      }
+
+      input,
+      textarea,
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 0.7rem 0.75rem;
+        font: inherit;
+        background: #fff;
+      }
+
+      textarea {
+        min-height: 110px;
+        resize: vertical;
+      }
+
+      input:focus,
+      textarea:focus,
+      select:focus {
+        outline: 3px solid #bfdbfe;
+        border-color: #2563eb;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      button {
+        border: 0;
+        border-radius: 8px;
+        background: #2563eb;
+        color: #fff;
+        font-weight: 600;
+        padding: 0.7rem 1rem;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #1d4ed8;
+      }
+
+      .hint {
+        font-size: 0.85rem;
+        color: #6b7280;
+      }
+
+      #status {
+        margin-top: 0.75rem;
+        font-size: 0.9rem;
+        color: #065f46;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <section class="card">
+        <h1>Voice Agent Bug Report</h1>
+        <p>Submit voice agent issues using the form below. Please include your email or slack for any followup questions.</p>
+
+        <form id="triage-form" novalidate>
+          <div class="field">
+            <label for="bug-report">Bug Report <span class="required">*</span></label>
+            <textarea id="bug-report" name="bugReport" required></textarea>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label for="customer">Customer <span class="required">*</span></label>
+              <input id="customer" name="customer" type="text" required />
+            </div>
+
+            <div class="field">
+              <label for="caller-id">Caller ID</label>
+              <input id="caller-id" name="callerId" type="text" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label for="start-date-time">Start date / time</label>
+              <input id="start-date-time" name="startDateTime" type="datetime-local" />
+            </div>
+
+            <div class="field">
+              <label for="impact-scope">Impact / Scope <span class="required">*</span></label>
+              <select id="impact-scope" name="impactScope" required>
+                <option value="" disabled selected>Select impact scope</option>
+                <option value="single">single</option>
+                <option value="many">many</option>
+                <option value="outage">outage</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="reported-by">Reported by - email or slack <span class="required">*</span></label>
+            <input id="reported-by" name="reportedBy" type="text" required />
+            <span class="hint">Example: user@example.com or @channel-name</span>
+          </div>
+
+          <div class="actions">
+            <button type="submit">Submit triage</button>
+          </div>
+        </form>
+
+        <div id="status" role="status" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById('triage-form');
+      const status = document.getElementById('status');
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        status.textContent = 'Triage details captured successfully.';
+      });
+    </script>
+  </body>
+</html>
