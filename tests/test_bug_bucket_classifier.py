@@ -7,6 +7,17 @@ def test_infrastructure_detection_http_code():
     assert result.secondary is None
 
 
+def test_infrastructure_detection_server_error_code_context():
+    result = classify_bug_buckets("Backend error 502 when fetching call recording")
+    assert result.primary == "Infrastructure"
+
+
+def test_numeric_500_without_http_context_does_not_match_infrastructure():
+    result = classify_bug_buckets("Customer says payment logged twice for $500")
+    assert result.primary == "Post-call process"
+    assert "Infrastructure" not in result.applicable
+
+
 def test_stt_detection():
     result = classify_bug_buckets("Transcript does not match what was said and has missing sections")
     assert result.primary == "STT"

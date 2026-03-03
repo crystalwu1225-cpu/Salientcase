@@ -23,7 +23,16 @@ class BugBucketClassification:
 
 _BUCKET_PATTERNS: dict[str, tuple[re.Pattern[str], ...]] = {
     "Infrastructure": (
-        re.compile(r"\b(5\d\d|http\s*(error|status)?\s*5\d\d)\b", re.IGNORECASE),
+        re.compile(
+            r"\b(?:"
+            r"http\s*(?:error|status|code)?\s*[:=]?\s*5\d\d"
+            r"|"
+            r"(?:server|gateway|backend|service)\s*(?:error|status|code)?\s*[:=]?\s*5\d\d"
+            r"|"
+            r"5\d\d\s*(?:http\s*)?(?:error|status|response)"
+            r")\b",
+            re.IGNORECASE,
+        ),
         re.compile(r"endpoint(s)?\s+(is\s+)?(down|failing|failed|unavailable)", re.IGNORECASE),
         re.compile(r"webhook(s)?\s+(is\s+)?(down|failing|failed).*(global|system|all)", re.IGNORECASE),
         re.compile(r"call(s)?\s+(not\s+connecting|failing\s+to\s+connect|dropping|dropped)", re.IGNORECASE),
