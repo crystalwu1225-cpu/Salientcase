@@ -94,7 +94,7 @@ def _matches_any(text: str, patterns: Iterable[re.Pattern[str]]) -> bool:
     return any(pattern.search(text) for pattern in patterns)
 
 
-def classify_bug_buckets(report_text: str) -> BugBucketClassification:
+def classify_bug(report_text: str) -> BugBucketClassification:
     """Classify a bug report into Bug Bucket tags.
 
     If multiple buckets are applicable, precedence is:
