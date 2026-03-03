@@ -45,7 +45,7 @@ Even when impact = `Single caller`, do **not** downgrade below `Sev1`.
 
 ### Step 3 — Impact-based scaling (if not Sev0)
 - If impact = `Many callers`, minimum severity = `Sev1`
-- If impact = `Single caller`, default severity = `Sev2`
+- If impact = `Single caller` **and no Sev0/Sev1 triggers apply**, classify as either `Sev2` or `Sev3` (never `Sev1`/`Sev0` unless those triggers are met)
 
 ### Step 4 — Functional severity adjustments
 Escalate to `Sev1` if any are true:
@@ -69,6 +69,10 @@ Assign `Sev3` only if all are true:
 - No business impact
 - Edge case with low frequency
 - No customer harm
+
+For single-caller issues with no Sev0/Sev1 triggers:
+- Use `Sev3` when the Sev3-only conditions above are satisfied.
+- Otherwise use `Sev2`.
 
 ### Step 5 — Bucket-specific modifiers
 #### Infrastructure
