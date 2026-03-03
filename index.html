@@ -17,28 +17,26 @@
       }
 
       .container {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        max-width: 1100px;
+        margin: 0 auto;
         padding: 1.5rem;
+        display: grid;
+        gap: 1rem;
       }
 
       .card {
-        width: min(760px, 100%);
         background: #ffffff;
         border-radius: 14px;
         box-shadow: 0 10px 30px rgba(31, 41, 55, 0.12);
         padding: 1.5rem;
       }
 
-      h1 {
+      h1, h2 {
         margin: 0 0 0.5rem;
-        font-size: 1.5rem;
       }
 
       p {
-        margin: 0 0 1.25rem;
+        margin: 0 0 1rem;
         color: #4b5563;
       }
 
@@ -47,7 +45,8 @@
         gap: 1rem;
       }
 
-      .grid-2 {
+      .grid-2,
+      .grid-4 {
         display: grid;
         grid-template-columns: 1fr;
         gap: 1rem;
@@ -56,6 +55,10 @@
       @media (min-width: 700px) {
         .grid-2 {
           grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .grid-4 {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
         }
       }
 
@@ -69,33 +72,19 @@
         font-size: 0.95rem;
       }
 
-      .required {
-        color: #b91c1c;
-      }
+      .required { color: #b91c1c; }
 
-      input,
-      textarea,
-      select {
+      input, textarea, select {
         width: 100%;
         box-sizing: border-box;
         border: 1px solid #d1d5db;
         border-radius: 8px;
-        padding: 0.7rem 0.75rem;
+        padding: 0.65rem 0.75rem;
         font: inherit;
         background: #fff;
       }
 
-      textarea {
-        min-height: 110px;
-        resize: vertical;
-      }
-
-      input:focus,
-      textarea:focus,
-      select:focus {
-        outline: 3px solid #bfdbfe;
-        border-color: #2563eb;
-      }
+      textarea { min-height: 110px; resize: vertical; }
 
       .actions {
         display: flex;
@@ -112,27 +101,31 @@
         cursor: pointer;
       }
 
-      button:hover {
-        background: #1d4ed8;
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
       }
 
-      .hint {
-        font-size: 0.85rem;
-        color: #6b7280;
+      th, td {
+        border-bottom: 1px solid #e5e7eb;
+        text-align: left;
+        padding: 0.6rem;
+        font-size: 0.92rem;
+        vertical-align: top;
       }
 
-      #status {
-        margin-top: 0.75rem;
-        font-size: 0.9rem;
-        color: #065f46;
-      }
+      th { background: #f8fafc; }
+      .hint { font-size: 0.85rem; color: #6b7280; }
+      #status { margin-top: 0.75rem; font-size: 0.9rem; color: #065f46; }
+      .empty { color: #6b7280; padding: 0.75rem 0; }
     </style>
   </head>
   <body>
     <main class="container">
       <section class="card">
         <h1>Voice Agent Bug Report</h1>
-        <p>Submit voice agent issues using the form below. Please include your email or slack for any followup questions.</p>
+        <p>Submit issues and store each response in a database-backed queue.</p>
 
         <form id="triage-form" novalidate>
           <div class="field">
@@ -145,7 +138,6 @@
               <label for="customer">Customer <span class="required">*</span></label>
               <input id="customer" name="customer" type="text" required />
             </div>
-
             <div class="field">
               <label for="caller-id">Caller ID</label>
               <input id="caller-id" name="callerId" type="text" />
@@ -157,7 +149,6 @@
               <label for="start-date-time">Start date / time</label>
               <input id="start-date-time" name="startDateTime" type="datetime-local" />
             </div>
-
             <div class="field">
               <label for="impact-scope">Impact / Scope <span class="required">*</span></label>
               <select id="impact-scope" name="impactScope" required>
@@ -179,26 +170,140 @@
             <button type="submit">Submit triage</button>
           </div>
         </form>
-
         <div id="status" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="card">
+        <h2>Submission Database</h2>
+        <p>Filter by bucket, severity, customer, and status.</p>
+        <div class="grid-4" id="filters">
+          <div class="field">
+            <label for="filter-bucket">Bucket</label>
+            <select id="filter-bucket"><option value="">All</option></select>
+          </div>
+          <div class="field">
+            <label for="filter-severity">Severity</label>
+            <select id="filter-severity"><option value="">All</option></select>
+          </div>
+          <div class="field">
+            <label for="filter-customer">Customer</label>
+            <select id="filter-customer"><option value="">All</option></select>
+          </div>
+          <div class="field">
+            <label for="filter-status">Status</label>
+            <select id="filter-status"><option value="">All</option></select>
+          </div>
+        </div>
+
+        <div id="table-container"></div>
       </section>
     </main>
 
     <script>
       const form = document.getElementById('triage-form');
       const status = document.getElementById('status');
+      const tableContainer = document.getElementById('table-container');
 
-      const STORAGE_KEY = 'voiceAgentBugReports';
+      const filterEls = {
+        bucket: document.getElementById('filter-bucket'),
+        severity: document.getElementById('filter-severity'),
+        customer: document.getElementById('filter-customer'),
+        status: document.getElementById('filter-status'),
+      };
 
-      function persistReport(report) {
-        const existingReports = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        existingReports.push(report);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(existingReports));
+      function currentFilters() {
+        return Object.fromEntries(Object.entries(filterEls).map(([key, el]) => [key, el.value]));
       }
 
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
+      function queryString(filters) {
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => value && params.append(key, value));
+        const stringified = params.toString();
+        return stringified ? `?${stringified}` : '';
+      }
 
+      function populateSelect(el, values, selected) {
+        const options = ['<option value="">All</option>', ...values.map((v) => `<option value="${v}">${v}</option>`)];
+        el.innerHTML = options.join('');
+        el.value = selected || '';
+      }
+
+      async function fetchSubmissions() {
+        const filters = currentFilters();
+        const response = await fetch(`/api/submissions${queryString(filters)}`);
+        if (!response.ok) throw new Error('Failed to load submissions');
+        return response.json();
+      }
+
+      function renderTable(rows, statuses) {
+        if (!rows.length) {
+          tableContainer.innerHTML = '<div class="empty">No submissions match the selected filters.</div>';
+          return;
+        }
+
+        const body = rows.map((row) => `
+          <tr>
+            <td>${row.id}</td>
+            <td>${row.bucket}</td>
+            <td>${row.severity}</td>
+            <td>${row.customer}</td>
+            <td>${row.bug_report}</td>
+            <td>
+              <select data-id="${row.id}" class="status-select">
+                ${statuses.map((st) => `<option value="${st}" ${st === row.status ? 'selected' : ''}>${st}</option>`).join('')}
+              </select>
+            </td>
+            <td>${new Date(row.submitted_at).toLocaleString()}</td>
+          </tr>
+        `).join('');
+
+        tableContainer.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th><th>Bucket</th><th>Severity</th><th>Customer</th><th>Bug Report</th><th>Status</th><th>Submitted</th>
+              </tr>
+            </thead>
+            <tbody>${body}</tbody>
+          </table>
+        `;
+
+        document.querySelectorAll('.status-select').forEach((select) => {
+          select.addEventListener('change', async (event) => {
+            const id = event.target.dataset.id;
+            const newStatus = event.target.value;
+            await fetch(`/api/submissions/${id}/status`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: newStatus }),
+            });
+            loadSubmissions();
+          });
+        });
+      }
+
+      async function loadSubmissions() {
+        try {
+          const data = await fetchSubmissions();
+          const rows = data.submissions;
+          const current = currentFilters();
+
+          populateSelect(filterEls.bucket, [...new Set(rows.map((r) => r.bucket))].sort(), current.bucket);
+          populateSelect(filterEls.severity, [...new Set(rows.map((r) => r.severity))].sort(), current.severity);
+          populateSelect(filterEls.customer, [...new Set(rows.map((r) => r.customer))].sort(), current.customer);
+          populateSelect(filterEls.status, data.statuses, current.status);
+
+          renderTable(rows, data.statuses);
+        } catch (error) {
+          console.error(error);
+          tableContainer.innerHTML = '<div class="empty">Unable to load submissions.</div>';
+        }
+      }
+
+      Object.values(filterEls).forEach((el) => el.addEventListener('change', loadSubmissions));
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
         if (!form.checkValidity()) {
           form.reportValidity();
           return;
@@ -211,18 +316,25 @@
           startDateTime: form.elements.startDateTime.value,
           impactScope: form.elements.impactScope.value,
           reportedBy: form.elements.reportedBy.value.trim(),
-          submittedAt: new Date().toISOString(),
         };
 
         try {
-          persistReport(report);
-          status.textContent = 'Triage details captured successfully.';
+          const response = await fetch('/api/submissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(report),
+          });
+          if (!response.ok) throw new Error('submit failed');
+          status.textContent = 'Triage details captured in database.';
           form.reset();
+          loadSubmissions();
         } catch (error) {
           console.error('Failed to persist triage report', error);
           status.textContent = 'Unable to save triage details. Please retry and contact support if this continues.';
         }
       });
+
+      loadSubmissions();
     </script>
   </body>
 </html>
