@@ -188,6 +188,14 @@
       const form = document.getElementById('triage-form');
       const status = document.getElementById('status');
 
+      const STORAGE_KEY = 'voiceAgentBugReports';
+
+      function persistReport(report) {
+        const existingReports = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        existingReports.push(report);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(existingReports));
+      }
+
       form.addEventListener('submit', (event) => {
         event.preventDefault();
 
@@ -196,7 +204,24 @@
           return;
         }
 
-        status.textContent = 'Triage details captured successfully.';
+        const report = {
+          bugReport: form.elements.bugReport.value.trim(),
+          customer: form.elements.customer.value.trim(),
+          callerId: form.elements.callerId.value.trim(),
+          startDateTime: form.elements.startDateTime.value,
+          impactScope: form.elements.impactScope.value,
+          reportedBy: form.elements.reportedBy.value.trim(),
+          submittedAt: new Date().toISOString(),
+        };
+
+        try {
+          persistReport(report);
+          status.textContent = 'Triage details captured successfully.';
+          form.reset();
+        } catch (error) {
+          console.error('Failed to persist triage report', error);
+          status.textContent = 'Unable to save triage details. Please retry and contact support if this continues.';
+        }
       });
     </script>
   </body>
